@@ -261,7 +261,7 @@ void UCXStack::ucx_contex_create()
         ceph_abort();
     }
 
-    status = ucp_config_read("CEPH", NULL, &ucp_config);
+    status = ucp_config_read("", NULL, &ucp_config);
     if (UCS_OK != status) {
         lderr(cct) << __func__ << "failed to read UCP config" << dendl;
         ceph_abort();
