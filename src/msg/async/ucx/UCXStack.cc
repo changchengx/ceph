@@ -249,13 +249,13 @@ void UCXStack::ucx_contex_create()
 
     ldout(cct, 10) << __func__ << " UCX contex is going to be created..." << dendl;
 
-    int rc = setenv("UCX_CEPH_NET_DEVICES", cct->_conf->ms_async_ucx_device.c_str(), 1);
+    int rc = setenv("UCX_NET_DEVICES", cct->_conf->ms_async_ucx_device.c_str(), 1);
     if (rc) {
         lderr(cct) << __func__ << " failed to export UCX_CEPH_NET_DEVICES. Application aborts." << dendl;
         ceph_abort();
     }
 
-    rc = setenv("UCX_CEPH_TLS", cct->_conf->ms_async_ucx_tls.c_str(), 1);
+    rc = setenv("UCX_TLS", cct->_conf->ms_async_ucx_tls.c_str(), 1);
     if (rc) {
         lderr(cct) << __func__ << " failed to export UCX_CEPH_TLS. Application aborts." << dendl;
         ceph_abort();
