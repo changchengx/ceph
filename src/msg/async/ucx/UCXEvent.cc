@@ -445,7 +445,7 @@ ssize_t UCXDriver::send(int fd, bufferlist &bl, bool more)
     req->bl->claim_append(bl);
     req->iov_list = iov_list;
 
-    ldout(cct, 0) << __func__ << " send in progress req " << req << dendl;
+    ldout(cct, 20) << __func__ << " send in progress req " << req << dendl;
 
     return total_len;
 }
