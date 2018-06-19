@@ -142,6 +142,11 @@ int UCXServerSocketImpl::accept(ConnectedSocket *sock,
     *sock = ConnectedSocket(std::move(csi));
 
     {
+/*
+Vasily: rough hack - we provide a local info instead of real peer addr,
+        the upper layer uses that addr to check if the peer is on the same node,
+        need to think how to resolve it
+*/
         struct sockaddr_in *addr = (struct sockaddr_in *) malloc(sizeof(*addr));
 
         memset(addr, 0, sizeof(*addr));

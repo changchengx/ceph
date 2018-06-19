@@ -96,6 +96,10 @@ int UCXDriver::connect(const entity_addr_t &peer_addr,
 
     ep_params.user_data = reinterpret_cast<void *>(fd);
     ep_params.flags     = UCP_EP_PARAMS_FLAGS_CLIENT_SERVER;
+/* 
+Vasily: it's harcoded but  
+    should be switch for three different cases: loopback(127.xxxx), any address(0.0.....) and specific one
+*/
 #if 1
     struct sockaddr_in addr;
 
@@ -181,6 +185,10 @@ int UCXDriver::listen(entity_addr_t &sa,
     server_fd = fd_pool.open_fd();
     params.field_mask = UCP_LISTENER_PARAM_FIELD_SOCK_ADDR |
                         UCP_LISTENER_PARAM_FIELD_ACCEPT_HANDLER2;
+/* 
+Vasily: it's harcoded but  
+    should be switch for three different cases: loopback, any address and specific one
+*/
 #if 1
     struct sockaddr_in addr;
 
