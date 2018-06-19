@@ -38,7 +38,6 @@ class UCXConnectedSocketImpl;
 class UCXWorker : public Worker {
 private:
     UCXStack *stack;
-    UCXDriver *driver;
 
 public:
     explicit UCXWorker(CephContext *c, unsigned i);

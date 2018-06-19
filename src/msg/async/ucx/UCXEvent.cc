@@ -365,6 +365,7 @@ void UCXDriver::cleanup()
 
 UCXDriver::~UCXDriver()
 {
+    cleanup();
 }
 
 ssize_t UCXDriver::send(int fd, bufferlist &bl, bool more)

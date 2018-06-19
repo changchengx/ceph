@@ -181,17 +181,20 @@ UCXWorker::~UCXWorker()
 
 int UCXWorker::get_fd()
 {
-   return driver->get_fd();
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
+    return driver->get_fd();
 }
 
 int UCXWorker::signal(int fd, ucp_ep_address_t *ep_addr)
 {
-   return driver->signal(fd, ep_addr);
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
+    return driver->signal(fd, ep_addr);
 }
 
 int UCXWorker::listen(entity_addr_t &addr, const SocketOptions &opts, ServerSocket *sock)
 {
     int server_socket = 0;
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
 
     int r = driver->listen(addr, opts, server_socket);
     if (r < 0) {
@@ -207,6 +210,7 @@ int UCXWorker::listen(entity_addr_t &addr, const SocketOptions &opts, ServerSock
 int UCXWorker::connect(const entity_addr_t &addr, const SocketOptions &opts, ConnectedSocket *sock)
 {
     int fd = 0;
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
 
     int r = driver->connect(addr, opts, fd);
     if (r < 0) {
@@ -228,6 +232,7 @@ void UCXWorker::initialize()
 
 void UCXWorker::destroy()
 {
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
     driver->cleanup();
 }
 
@@ -303,7 +308,7 @@ void UCXStack::ucx_contex_create()
 
 void UCXWorker::worker_init()
 {
-    driver = dynamic_cast<UCXDriver *>(center.get_driver());
+    UCXDriver *driver = dynamic_cast<UCXDriver *>(center.get_driver());
     driver->worker_init(get_stack()->get_ucp_context());
 }
 
