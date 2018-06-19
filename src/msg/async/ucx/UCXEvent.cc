@@ -662,19 +662,22 @@ int UCXDriver::process_connections(vector<FiredFileEvent> &fired_events)
     if (!accepted.empty()) {
         accept_t *c = accepted.front();
 
+        int fd = c->fd;
+        ucp_ep_address_t *ep_addr = c->ep_addr;
+
         accepted.pop_front();
-        if (server_conn_create(c->fd, c->ep_addr) < 0) {
+        delete c;
+
+        if (server_conn_create(fd, ep_addr) < 0) {
             ceph_abort();
         }
 
-        delete c;
-
-        if (read_events.count(c->fd) > 0) {
-            fe.fd = c->fd;
+        if (read_events.count(fd) > 0) {
+            fe.fd = fd;
             fe.mask = EVENT_READABLE;
             fired_events.push_back(fe);
 
-            ldout(cct, 20) << __func__ << " accepted fd: " << c->fd << dendl;
+            ldout(cct, 20) << __func__ << " accepted fd: " << fd << dendl;
 
             return fe.fd;
         }
