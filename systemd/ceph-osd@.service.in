@@ -16,6 +16,8 @@ LockPersonality=true
 MemoryDenyWriteExecute=true
 # Need NewPrivileges via `sudo smartctl`
 NoNewPrivileges=false
+LimitMEMLOCK=infinity
+PrivateDevices=no
 ProtectControlGroups=true
 ProtectHome=true
 ProtectKernelModules=true

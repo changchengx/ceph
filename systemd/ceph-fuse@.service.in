@@ -12,6 +12,7 @@ ExecStart=/usr/bin/ceph-fuse -f --cluster ${CLUSTER} %I
 LockPersonality=true
 MemoryDenyWriteExecute=true
 NoNewPrivileges=true
+LimitMEMLOCK=infinity
 # ceph-fuse requires access to /dev fuse device
 PrivateDevices=no
 ProtectControlGroups=true

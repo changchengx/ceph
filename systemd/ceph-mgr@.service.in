@@ -18,7 +18,8 @@ LockPersonality=true
 MemoryDenyWriteExecute=false
 
 NoNewPrivileges=true
-PrivateDevices=yes
+LimitMEMLOCK=infinity
+PrivateDevices=no
 ProtectControlGroups=true
 ProtectHome=true
 ProtectKernelModules=true
