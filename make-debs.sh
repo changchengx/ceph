@@ -69,6 +69,10 @@ fi
 # c) use half of the available processors
 #
 : ${NPROC:=$(($(nproc) / 2))}
+MEM_P=`free --giga | grep 'Mem' | awk '{print $2}'`
+if [ $MEM_P -gt 0 ] && [ $MEM_P -lt $(nproc) ]; then
+    NPROC=$((MEM_P/2))
+fi
 if test $NPROC -gt 1 ; then
     j=-j${NPROC}
 fi
