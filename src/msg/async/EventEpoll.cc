@@ -35,10 +35,14 @@ int EpollDriver::init(EventCenter *c, int nevent)
   if (epfd == -1) {
     lderr(cct) << __func__ << " unable to do epoll_create: "
                        << cpp_strerror(errno) << dendl;
+    free(events);
+    events = nullptr;
     return -errno;
   }
   if (::fcntl(epfd, F_SETFD, FD_CLOEXEC) == -1) {
     int e = errno;
+    free(events);
+    events = nullptr;
     ::close(epfd);
     lderr(cct) << __func__ << " unable to set cloexec: "
                        << cpp_strerror(e) << dendl;
