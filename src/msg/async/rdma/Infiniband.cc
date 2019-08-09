@@ -39,68 +39,11 @@ Port::Port(CephContext *cct, struct ibv_context* ictxt, uint8_t ipn): ctxt(ictxt
   }
 
   lid = port_attr.lid;
-
-#ifdef HAVE_IBV_EXP
-  union ibv_gid cgid;
-  struct ibv_exp_gid_attr gid_attr;
-  bool malformed = false;
-
-  ldout(cct,1) << __func__ << " using experimental verbs for gid" << dendl;
-
-
-  // search for requested GID in GIDs table
-  ldout(cct, 1) << __func__ << " looking for local GID " << (cct->_conf->ms_async_rdma_local_gid)
-    << " of type " << (cct->_conf->ms_async_rdma_roce_ver) << dendl;
-  r = sscanf(cct->_conf->ms_async_rdma_local_gid.c_str(),
-	     "%02hhx%02hhx:%02hhx%02hhx:%02hhx%02hhx:%02hhx%02hhx"
-	     ":%02hhx%02hhx:%02hhx%02hhx:%02hhx%02hhx:%02hhx%02hhx",
-	     &cgid.raw[ 0], &cgid.raw[ 1],
-	     &cgid.raw[ 2], &cgid.raw[ 3],
-	     &cgid.raw[ 4], &cgid.raw[ 5],
-	     &cgid.raw[ 6], &cgid.raw[ 7],
-	     &cgid.raw[ 8], &cgid.raw[ 9],
-	     &cgid.raw[10], &cgid.raw[11],
-	     &cgid.raw[12], &cgid.raw[13],
-	     &cgid.raw[14], &cgid.raw[15]);
-
-  if (r != 16) {
-    ldout(cct, 1) << __func__ << " malformed or no GID supplied, using GID index 0" << dendl;
-    malformed = true;
-  }
-
-  gid_attr.comp_mask = IBV_EXP_QUERY_GID_ATTR_TYPE;
-
-  for (gid_idx = 0; gid_idx < port_attr.gid_tbl_len; gid_idx++) {
-    r = ibv_query_gid(ctxt, port_num, gid_idx, &gid);
-    if (r) {
-      lderr(cct) << __func__  << " query gid of port " << port_num << " index " << gid_idx << " failed  " << cpp_strerror(errno) << dendl;
-      ceph_abort();
-    }
-    r = ibv_exp_query_gid_attr(ctxt, port_num, gid_idx, &gid_attr);
-    if (r) {
-      lderr(cct) << __func__  << " query gid attributes of port " << port_num << " index " << gid_idx << " failed  " << cpp_strerror(errno) << dendl;
-      ceph_abort();
-    }
-
-    if (malformed) break; // stay with gid_idx=0
-    if ( (gid_attr.type == cct->_conf->ms_async_rdma_roce_ver) &&
-	 (memcmp(&gid, &cgid, 16) == 0) ) {
-      ldout(cct, 1) << __func__ << " found at index " << gid_idx << dendl;
-      break;
-    }
-  }
-
-  if (gid_idx == port_attr.gid_tbl_len) {
-    lderr(cct) << __func__ << " Requested local GID was not found in GID table" << dendl;
-    ceph_abort();
-  }
-#else
   r = ibv_query_gid(ctxt, port_num, 0, &gid);
   if (r) {
     lderr(cct) << __func__  << " query gid failed  " << cpp_strerror(errno) << dendl;
     ceph_abort();
   }
-#endif
 }
 
 Device::Device(CephContext *cct, ibv_device* ib_dev): device(ib_dev), active_port(nullptr)
