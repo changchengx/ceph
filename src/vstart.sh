@@ -591,7 +591,12 @@ prepare_conf() {
         enable experimental unrecoverable data corrupting features = *
         osd_crush_chooseleaf_type = 0
         debug asok assert abort = true
+        log_flush_on_exit = true
+        debug ms = 30
 $msgr_conf
+        ms_type = async+rdma
+        ms_async_rdma_device_name = rocep4s0
+        ms_async_rdma_support_srq = true
 $extra_conf
 EOF
     if [ "$lockdep" -eq 1 ] ; then
