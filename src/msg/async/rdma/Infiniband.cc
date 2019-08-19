@@ -150,7 +150,7 @@ int Infiniband::QueuePair::init()
       lderr(cct) << __func__ << " failed to create queue pair" << cpp_strerror(errno) << dendl;
       if (errno == ENOMEM) {
         lderr(cct) << __func__ << " try reducing ms_async_rdma_receive_queue_length, "
-                                  " ms_async_rdma_send_buffers or"
+                                  " ms_async_rdma_send_queue_len or"
                                   " ms_async_rdma_sge_size" << dendl;
       }
       return -1;
@@ -826,8 +826,8 @@ void Infiniband::init()
   }
 
   tx_queue_len = device->device_attr.max_qp_wr;
-  if (tx_queue_len > cct->_conf->ms_async_rdma_send_buffers) {
-    tx_queue_len = cct->_conf->ms_async_rdma_send_buffers;
+  if (tx_queue_len > cct->_conf->ms_async_rdma_send_queue_len) {
+    tx_queue_len = cct->_conf->ms_async_rdma_send_queue_len;
     ldout(cct, 1) << __func__ << " assigning: " << tx_queue_len << " send buffers"  << dendl;
   } else {
     ldout(cct, 0) << __func__ << " using the max allowed send buffers: " << tx_queue_len << dendl;

@@ -144,7 +144,7 @@ OPTION(ms_async_max_op_threads, OPT_U64)        // max number of worker processi
 OPTION(ms_async_rdma_device_name, OPT_STR)
 OPTION(ms_async_rdma_enable_hugepage, OPT_BOOL)
 OPTION(ms_async_rdma_sge_size, OPT_INT)
-OPTION(ms_async_rdma_send_buffers, OPT_U32)
+OPTION(ms_async_rdma_send_queue_len, OPT_U32)
 //size of the receive buffer pool, 0 is unlimited
 OPTION(ms_async_rdma_receive_buffers, OPT_U32)
 // max number of wr in srq

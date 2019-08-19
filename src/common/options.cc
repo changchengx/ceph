@@ -1119,7 +1119,7 @@ std::vector<Option> get_global_options() {
     .set_default(128_K)
     .set_description(""),
 
-    Option("ms_async_rdma_send_buffers", Option::TYPE_UINT, Option::LEVEL_ADVANCED)
+    Option("ms_async_rdma_send_queue_len", Option::TYPE_UINT, Option::LEVEL_ADVANCED)
     .set_default(1_K)
     .set_description(""),
 
