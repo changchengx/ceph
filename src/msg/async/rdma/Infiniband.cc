@@ -151,7 +151,7 @@ int Infiniband::QueuePair::init()
       if (errno == ENOMEM) {
         lderr(cct) << __func__ << " try reducing ms_async_rdma_receive_queue_length, "
                                   " ms_async_rdma_send_buffers or"
-                                  " ms_async_rdma_buffer_size" << dendl;
+                                  " ms_async_rdma_sge_size" << dendl;
       }
       return -1;
     }
@@ -610,7 +610,7 @@ char *Infiniband::MemoryManager::PoolAllocator::malloc(const size_type block_siz
   ceph_assert(g_ctx);
   MemoryManager *manager = g_ctx->manager;
   CephContext *cct = manager->cct;
-  size_t chunk_buffer_size = sizeof(Chunk) + cct->_conf->ms_async_rdma_buffer_size;
+  size_t chunk_buffer_size = sizeof(Chunk) + cct->_conf->ms_async_rdma_sge_size;
   size_t chunk_buffer_number = block_size / chunk_buffer_size;
 
   if (!g_ctx->can_alloc(chunk_buffer_number))
@@ -641,7 +641,7 @@ char *Infiniband::MemoryManager::PoolAllocator::malloc(const size_type block_siz
   /* initialize chunks */
   Chunk *chunk = minfo->chunks;
   for (unsigned i = 0; i < chunk_buffer_number; i++) {
-    new(chunk) Chunk(minfo->mr, cct->_conf->ms_async_rdma_buffer_size, chunk->data, 0, 0, minfo->mr->lkey);
+    new(chunk) Chunk(minfo->mr, cct->_conf->ms_async_rdma_sge_size, chunk->data, 0, 0, minfo->mr->lkey);
     chunk = reinterpret_cast<Chunk *>(reinterpret_cast<char *>(chunk) + chunk_buffer_size);
   }
 
@@ -664,7 +664,7 @@ void Infiniband::MemoryManager::PoolAllocator::free(char * const block)
 Infiniband::MemoryManager::MemoryManager(CephContext *c, Device *d, ProtectionDomain *p)
   : cct(c), device(d), pd(p),
     rxbuf_pool_ctx(this),
-    rxbuf_pool(&rxbuf_pool_ctx, sizeof(Chunk) + c->_conf->ms_async_rdma_buffer_size,
+    rxbuf_pool(&rxbuf_pool_ctx, sizeof(Chunk) + c->_conf->ms_async_rdma_sge_size,
                c->_conf->ms_async_rdma_receive_buffers > 0 ?
                   // if possible make initial pool size 2 * receive_queue_len
                   // that way there will be no pool expansion upon receive of the
@@ -673,7 +673,7 @@ Infiniband::MemoryManager::MemoryManager(CephContext *c, Device *d, ProtectionDo
                    c->_conf->ms_async_rdma_receive_buffers :  2 * c->_conf->ms_async_rdma_receive_queue_len) :
                   // rx pool is infinite, we can set any initial size that we want
                    2 * c->_conf->ms_async_rdma_receive_queue_len,
-                   device->device_attr.max_mr_size / (sizeof(Chunk) + cct->_conf->ms_async_rdma_buffer_size))
+                   device->device_attr.max_mr_size / (sizeof(Chunk) + cct->_conf->ms_async_rdma_sge_size))
 {
 }
 
@@ -834,7 +834,7 @@ void Infiniband::init()
   }
 
   //check for the memory region size misconfiguration
-  if ((uint64_t)cct->_conf->ms_async_rdma_buffer_size * tx_queue_len > device->device_attr.max_mr_size) {
+  if ((uint64_t)cct->_conf->ms_async_rdma_sge_size * tx_queue_len > device->device_attr.max_mr_size) {
     lderr(cct) << __func__ << " Out of max memory region size " << dendl;
     ceph_abort();
   }
@@ -843,7 +843,7 @@ void Infiniband::init()
                 << " completion entries" << dendl;
 
   memory_manager = new MemoryManager(cct, device, pd);
-  memory_manager->create_tx_pool(cct->_conf->ms_async_rdma_buffer_size, tx_queue_len);
+  memory_manager->create_tx_pool(cct->_conf->ms_async_rdma_sge_size, tx_queue_len);
 
   if (support_srq) {
     srq = create_shared_receive_queue(rx_queue_len, MAX_SHARED_RX_SGE_COUNT);

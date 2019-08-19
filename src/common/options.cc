@@ -1115,7 +1115,7 @@ std::vector<Option> get_global_options() {
     .set_default(false)
     .set_description(""),
 
-    Option("ms_async_rdma_buffer_size", Option::TYPE_SIZE, Option::LEVEL_ADVANCED)
+    Option("ms_async_rdma_sge_size", Option::TYPE_SIZE, Option::LEVEL_ADVANCED)
     .set_default(128_K)
     .set_description(""),
 
