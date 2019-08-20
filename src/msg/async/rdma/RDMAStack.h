@@ -111,7 +111,7 @@ class RDMADispatcher {
   std::atomic<uint64_t> inflight = {0};
 
   void post_chunk_to_pool(Chunk* chunk);
-  int post_chunks_to_rq(int num, ibv_qp *qp=NULL);
+  int post_chunks_to_rq(int num, QueuePair *qp = NULL);
 };
 
 class RDMAWorker : public Worker {
