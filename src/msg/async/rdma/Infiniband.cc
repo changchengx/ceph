@@ -205,6 +205,15 @@ int Infiniband::QueuePair::init()
   }
   ldout(cct, 20) << __func__ << " successfully change queue pair to INIT:"
                  << " qp=" << qp << dendl;
+  if (!srq) {
+    ret = infiniband.post_chunks_to_rq(max_recv_wr, this);
+    if (ret == 0) {
+      lderr(cct) << __func__ << " intialize no SRQ Queue Pair, qp number: " << qp->qp_num
+                 << " fatal error: can't post SQ WR " << dendl;
+      return -1;
+    }
+    ldout(cct, 20) << __func__ << " initialize Queue Pair, qp number: " << qp->qp_num << " post SQ WR " << ret << dendl;
+  }
   return 0;
 }
 
@@ -437,8 +446,8 @@ Infiniband::ProtectionDomain::~ProtectionDomain()
 
 
 Infiniband::MemoryManager::Chunk::Chunk(ibv_mr* m, uint32_t bytes, char* buffer,
-    uint32_t offset, uint32_t bound, uint32_t lkey)
-  : mr(m), lkey(lkey), bytes(bytes), offset(offset), bound(bound), buffer(buffer)
+    uint32_t offset, uint32_t bound, uint32_t lkey, QueuePair *qp)
+  : mr(m), qp(qp), lkey(lkey), bytes(bytes), offset(offset), bound(bound), buffer(buffer)
 {
 }
 
@@ -535,7 +544,7 @@ int Infiniband::MemoryManager::Cluster::fill(uint32_t num)
   ceph_assert(m);
   Chunk* chunk = chunk_base;
   for (uint32_t offset = 0; offset < bytes; offset += buffer_size){
-    new(chunk) Chunk(m, buffer_size, base + offset, 0, buffer_size, m->lkey);
+    new(chunk) Chunk(m, buffer_size, base + offset, 0, buffer_size, m->lkey, nullptr);
     free_chunks.push_back(chunk);
     chunk++;
   }
@@ -653,7 +662,7 @@ char *Infiniband::MemoryManager::PoolAllocator::malloc(const size_type block_siz
   /* initialize chunks */
   Chunk *chunk = minfo->chunks;
   for (unsigned i = 0; i < chunk_buffer_number; i++) {
-    new(chunk) Chunk(minfo->mr, cct->_conf->ms_async_rdma_sge_size, chunk->data, 0, 0, minfo->mr->lkey);
+    new(chunk) Chunk(minfo->mr, cct->_conf->ms_async_rdma_sge_size, chunk->data, 0, 0, minfo->mr->lkey, nullptr);
     chunk = reinterpret_cast<Chunk *>(reinterpret_cast<char *>(chunk) + chunk_buffer_size);
   }
 
@@ -677,14 +686,7 @@ Infiniband::MemoryManager::MemoryManager(CephContext *c, Device *d, ProtectionDo
   : cct(c), device(d), pd(p),
     rxbuf_pool_ctx(this),
     rxbuf_pool(&rxbuf_pool_ctx, sizeof(Chunk) + c->_conf->ms_async_rdma_sge_size,
-               c->_conf->ms_async_rdma_receive_buffers > 0 ?
-                  // if possible make initial pool size 2 * receive_queue_len
-                  // that way there will be no pool expansion upon receive of the
-                  // first packet.
-                  (c->_conf->ms_async_rdma_receive_buffers < 2 * c->_conf->ms_async_rdma_receive_queue_len ?
-                   c->_conf->ms_async_rdma_receive_buffers :  2 * c->_conf->ms_async_rdma_receive_queue_len) :
-                  // rx pool is infinite, we can set any initial size that we want
-                   2 * c->_conf->ms_async_rdma_receive_queue_len,
+               c->_conf->ms_async_rdma_receive_buffers,
                    device->device_attr.max_mr_size / (sizeof(Chunk) + cct->_conf->ms_async_rdma_sge_size))
 {
 }
@@ -958,6 +960,11 @@ int Infiniband::post_chunks_to_rq(int rq_wr_num, QueuePair *qp)
     rx_work_request[i].sg_list = &isge[i];
     rx_work_request[i].num_sge = 1;
 
+    if (qp && !qp->get_srq()) {
+       chunk->set_qp(qp);
+       qp->add_rq_wr(chunk);
+    }
+
     i++;
   }
 
@@ -1086,10 +1093,15 @@ void Infiniband::gid_to_wire_gid(const IBSYNMsg& im, char wgid[])
 
 Infiniband::QueuePair::~QueuePair()
 {
+  ldout(cct, 20) << __func__ << " destroy Queue Pair, qp number: " << qp->qp_num << " left SQ WR " << recv_queue.size() << dendl;
   if (qp) {
     ldout(cct, 20) << __func__ << " destroy qp=" << qp << dendl;
     ceph_assert(!ibv_destroy_qp(qp));
   }
+  for (auto& chunk: recv_queue) {
+    infiniband.get_memory_manager()->release_rx_buffer(chunk);
+  }
+  recv_queue.clear();
 }
 
 /**
