@@ -44,6 +44,8 @@
 #define PSN_LEN 24
 #define PSN_MSK ((1 << PSN_LEN) - 1)
 
+#define BEACON_WRID 0xDEADBEEF
+
 struct IBSYNMsg {
   uint16_t lid;
   uint32_t qpn;
