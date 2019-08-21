@@ -98,6 +98,7 @@ class RDMADispatcher {
     ++num_pending_workers;
   }
   RDMAConnectedSocketImpl* get_conn_lockless(uint32_t qp);
+  QueuePair* get_qp_lockless(uint32_t qp);
   QueuePair* get_qp(uint32_t qp);
   void schedule_qp_destroy(uint32_t qp);
   Infiniband::CompletionQueue* get_tx_cq() const { return tx_cq; }

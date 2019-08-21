@@ -373,9 +373,8 @@ RDMAConnectedSocketImpl* RDMADispatcher::get_conn_lockless(uint32_t qp)
   return it->second.second;
 }
 
-Infiniband::QueuePair* RDMADispatcher::get_qp(uint32_t qp)
+Infiniband::QueuePair* RDMADispatcher::get_qp_lockless(uint32_t qp)
 {
-  std::lock_guard l{lock};
   // Try to find the QP in qp_conns firstly.
   auto it = qp_conns.find(qp);
   if (it != qp_conns.end())
@@ -385,8 +384,13 @@ Infiniband::QueuePair* RDMADispatcher::get_qp(uint32_t qp)
   for (auto &i: dead_queue_pairs)
     if (i->get_local_qp_number() == qp)
       return i;
-
   return nullptr;
+}
+
+Infiniband::QueuePair* RDMADispatcher::get_qp(uint32_t qp)
+{
+  std::lock_guard l{lock};
+  return get_qp_lockless(qp);
 }
 
 void RDMADispatcher::enqueue_dead_qp(uint32_t qpn)
