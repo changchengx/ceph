@@ -239,6 +239,7 @@ void RDMAConnectedSocketImpl::handle_connection() {
       }
       r = activate();
       ceph_assert(!r);
+      my_msg.peer_qpn = peer_msg.qpn;
       r = ib->send_msg(cct, tcp_fd, my_msg);
       if (r < 0) {
         ldout(cct, 1) << __func__ << " server ack failed." << dendl;

@@ -219,6 +219,7 @@ class RDMAConnectedSocketImpl : public ConnectedSocketImpl {
   virtual int fd() const override { return notify_fd; }
   void fault();
   const char* get_qp_state() { return Infiniband::qp_state_string(qp->get_state()); }
+  int32_t get_remote_qpn (void) const { return my_msg.peer_qpn; }
   ssize_t submit(bool more);
   int activate();
   void fin();
