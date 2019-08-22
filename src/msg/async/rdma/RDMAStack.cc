@@ -291,6 +291,7 @@ void RDMADispatcher::polling()
         for (auto& qp: dead_qps) {
           perf_logger->dec(l_msgr_rdma_active_queue_pair);
           ldout(cct, 10) << __func__ << " finally delete qp = " << qp << dendl;
+          std::lock_guard l{lock}; // protect qp when dealing with it in handle_rx_event
           delete qp;
         }
       }
