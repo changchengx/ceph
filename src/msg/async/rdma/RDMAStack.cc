@@ -141,23 +141,37 @@ void RDMADispatcher::handle_async_event()
                    << ib->get_device()->ctxt << " Need destroy and recreate resource " << dendl;
         break;
       case IBV_EVENT_QP_LAST_WQE_REACHED:
-        /* Last WQE Reached on a QP associated with and SRQ */
         {
-          // FIXME: Currently we must ensure no other factor make QP in ERROR state,
-          // otherwise this qp can't be deleted in current cleanup flow.
+          /*
+           * 1. The QP bound with SRQ is in IBV_QPS_ERR state & no more WQE on the RQ of the QP
+           *    Reason: QP is force switched into Error before posting Beacon WR.
+           *            The QP's WRs will be flushed into CQ with IBV_WC_WR_FLUSH_ERR status
+           *            For SRQ, only WRs on the QP which is switched into Error status will be flushed.
+           *    Handle: Only confirm that qp enter into dead queue pairs
+           * 2. The CQE with error was generated for the last WQE
+           *    Handle: output error log
+           */
           perf_logger->inc(l_msgr_rdma_async_last_wqe_events);
-          uint64_t qpn = async_event.element.qp->qp_num;
-          lderr(cct) << __func__ << " event associated qp=" << async_event.element.qp
-                     << " evt: " << ibv_event_type_str(async_event.event_type) << dendl;
+          ibv_qp* ib_qp = async_event.element.qp;
+          uint32_t qpn = ib_qp->qp_num;
           std::lock_guard l{lock};
           RDMAConnectedSocketImpl *conn = get_conn_lockless(qpn);
+          QueuePair* qp = get_qp_lockless(qpn);
+
+          if (qp ? !qp->is_dead() : 0) {
+            lderr(cct) << __func__ << " QP not dead, event associate qp number: " << qpn
+                       << " Queue Pair status: " << Infiniband::qp_state_string(qp->get_state())
+                       << " Event : " << ibv_event_type_str(async_event.event_type) << dendl;
+          }
           if (!conn) {
-            ldout(cct, 1) << __func__ << " missing qp_num=" << qpn << " discard event" << dendl;
+            ldout(cct, 20) << __func__ << " Connection's QP maybe entered into dead status. "
+                           << " qp number: " << qpn << dendl;
           } else {
-            ldout(cct, 1) << __func__ << " it's not forwardly stopped by us, reenable=" << conn << dendl;
-            conn->fault();
-            if (!cct->_conf->ms_async_rdma_cm)
-              enqueue_dead_qp(qpn);
+             conn->fault();
+             if (qp) {
+                if (!cct->_conf->ms_async_rdma_cm)
+                enqueue_dead_qp(qpn);
+             }
           }
         }
         break;
