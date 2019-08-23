@@ -128,6 +128,8 @@ void RDMADispatcher::handle_async_event()
       return;
     }
     perf_logger->inc(l_msgr_rdma_total_async_events);
+    ldout(cct, 1) << __func__ << "Event : " << ibv_event_type_str(async_event.event_type) << dendl;
+
     switch (async_event.event_type) {
       /***********************CQ events********************/
       case IBV_EVENT_CQ_ERR:
