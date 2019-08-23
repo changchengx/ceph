@@ -133,14 +133,22 @@ void RDMADispatcher::handle_async_event()
     switch (async_event.event_type) {
       /***********************CQ events********************/
       case IBV_EVENT_CQ_ERR:
-        lderr(cct) << __func__ << " CQ Overflow, dev = " << ib->get_device()->ctxt
+        lderr(cct) << __func__ << " Fatal Error, effect all QP bound with same CQ, "
+                   << " CQ Overflow, dev = " << ib->get_device()->ctxt
                    << " Need destroy and recreate resource " << dendl;
         break;
       /***********************QP events********************/
       case IBV_EVENT_QP_FATAL:
-        /* Error occurred on a QP and it transitioned to error state */
-        lderr(cct) << __func__ << " Error occurred on a QP and it transitioned to error state, dev = "
-                   << ib->get_device()->ctxt << " Need destroy and recreate resource " << dendl;
+	{
+          /* Error occurred on a QP and it transitioned to error state */
+          ibv_qp* ib_qp = async_event.element.qp;
+          uint32_t qpn = ib_qp->qp_num;
+          std::lock_guard l{lock};
+          QueuePair* qp = get_qp_lockless(qpn);
+          lderr(cct) << __func__ << " Fatal Error, event associate qp number: " << qpn
+                     << " Queue Pair status: " << Infiniband::qp_state_string(qp->get_state())
+                     << " Event : " << ibv_event_type_str(async_event.event_type) << dendl;
+	}
         break;
       case IBV_EVENT_QP_LAST_WQE_REACHED:
         {
@@ -194,23 +202,18 @@ void RDMADispatcher::handle_async_event()
         [[fallthrough]];
       case IBV_EVENT_PATH_MIG_ERR:
         /* A connection failed to migrate to the alternate path */
-        [[fallthrough]];
-
+        break;
       /***********************SRQ events*******************/
       case IBV_EVENT_SRQ_ERR:
         /* Error occurred on an SRQ */
-        // fall through #TODO
         [[fallthrough]];
       case IBV_EVENT_SRQ_LIMIT_REACHED:
         /* SRQ limit was reached */
-        [[fallthrough]];
-        // fall through #TODO
-
+        break;
       /***********************Port events******************/
       case IBV_EVENT_PORT_ACTIVE:
         /* Link became active on a port */
         [[fallthrough]];
-        // fall through #TODO
       case IBV_EVENT_PORT_ERR:
         /* Link became unavailable on a port */
         [[fallthrough]];
@@ -228,18 +231,19 @@ void RDMADispatcher::handle_async_event()
         [[fallthrough]];
       case IBV_EVENT_GID_CHANGE:
         /* GID table was changed on a port */
-        [[fallthrough]];
+        break;
 
       /***********************CA events******************/
       //CA events:
       case IBV_EVENT_DEVICE_FATAL:
         /* CA is in FATAL state */
-        ldout(cct, 1) << __func__ << " ibv_get_async_event: dev = " << ib->get_device()->ctxt
-                      << " evt: " << ibv_event_type_str(async_event.event_type) << dendl;
-	break;
+        lderr(cct) << __func__ << " ibv_get_async_event: dev = " << ib->get_device()->ctxt
+                   << " evt: " << ibv_event_type_str(async_event.event_type) << dendl;
+        break;
       default:
         lderr(cct) << __func__ << " ibv_get_async_event: dev = " << ib->get_device()->ctxt
                    << " unknown event: " << async_event.event_type << dendl;
+        break;
     }
     ibv_ack_async_event(&async_event);
   }
