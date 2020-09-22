@@ -85,6 +85,7 @@
 #include "MgrMonitor.h"
 #include "MgrStatMonitor.h"
 #include "ConfigMonitor.h"
+#include "ReplicaMonitor.h"
 #include "mon/QuorumService.h"
 #include "mon/HealthMonitor.h"
 #include "mon/ConfigKeyService.h"
@@ -243,6 +244,9 @@ Monitor::Monitor(CephContext* cct_, string nm, MonitorDBStore *s,
   paxos_service[PAXOS_MDSMAP].reset(new MDSMonitor(this, paxos, "mdsmap"));
   paxos_service[PAXOS_MONMAP].reset(new MonmapMonitor(this, paxos, "monmap"));
   paxos_service[PAXOS_OSDMAP].reset(new OSDMonitor(cct, this, paxos, "osdmap"));
+#if defined(WITH_CACHE_REPLICA)
+  paxos_service[PAXOS_REPLICAMAP].reset(new ReplicaMonitor(this, paxos, "replicamap"));
+#endif
   paxos_service[PAXOS_LOG].reset(new LogMonitor(this, paxos, "logm"));
   paxos_service[PAXOS_AUTH].reset(new AuthMonitor(this, paxos, "auth"));
   paxos_service[PAXOS_MGR].reset(new MgrMonitor(this, paxos, "mgr"));
@@ -5185,6 +5189,11 @@ void Monitor::handle_subscribe(MonOpRequestRef op)
         ceph_assert(sub != nullptr);
         mdsmon()->check_sub(sub);
       }
+#if defined(WITH_CACHE_REPLICA)
+    } else if (p->first == "replicamap") {
+      dout(10) << __func__ << ": ReplicaDaemon sub '" << p->first << "'" << dendl;
+      replicamon()->check_sub(s->sub_map[p->first]);
+#endif
     } else if (p->first == "osdmap") {
       if ((int)s->is_capable("osd", MON_CAP_R)) {
 	if (s->osd_epoch > p->second.start) {
