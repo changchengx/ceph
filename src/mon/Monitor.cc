@@ -937,7 +937,7 @@ int Monitor::init()
 
   // start ticker
   timer.init();
-  new_tick();
+  new_tick(); // trigger tick to walk through PaxosService list
 
   cpu_tp.start();
 
