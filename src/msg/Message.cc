@@ -826,11 +826,6 @@ Message *decode_message(CephContext *cct,
     m = make_message<MMDSTableRequest>();
     break;
 
-	/*  case MSG_MDS_INODEUPDATE:
-    m = make_message<MInodeUpdate>();
-    break;
-	*/
-
   case MSG_MDS_INODEFILECAPS:
     m = make_message<MInodeFileCaps>();
     break;

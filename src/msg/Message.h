@@ -157,7 +157,6 @@
 #define MSG_MDS_CACHEREJOIN        0x202
 #define MSG_MDS_DISCOVER           0x203
 #define MSG_MDS_DISCOVERREPLY      0x204
-#define MSG_MDS_INODEUPDATE        0x205
 #define MSG_MDS_DIRUPDATE          0x206
 #define MSG_MDS_CACHEEXPIRE        0x207
 #define MSG_MDS_DENTRYUNLINK       0x208
