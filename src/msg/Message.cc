@@ -217,6 +217,7 @@
 #include "messages/MOSDPGUpdateLogMissingReply.h"
 
 #include "messages/MReplicaDaemonMap.h"
+#include "messages/MReplicaDaemonBlink.h"
 
 #ifdef WITH_BLKIN
 #include "Messenger.h"
@@ -921,6 +922,10 @@ Message *decode_message(CephContext *cct,
 #if defined(WITH_CACHE_REPLICA)
   case CEPH_MSG_REPLICADAEMON_MAP:
     m = make_message<MReplicaDaemonMap>();
+    break;
+
+  case MSG_REPLICADAEMON_BLINK:
+    m = make_message<MReplicaDaemonBlink>();
     break;
 #endif
 
