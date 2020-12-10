@@ -143,6 +143,43 @@ bool ReplicaMonitor::prepare_update(MonOpRequestRef mon_op_req)
   return false;
 }
 
+bool ReplicaMonitor::prepare_blink(MonOpRequestRef mon_op_req)
+{
+  auto blink_msg = mon_op_req->get_req<MReplicaDaemonBlink>();
+
+  bool peer_updated = false;
+  auto& recv_replicadaemon_state = blink_msg->get_replicadaemon_stateref();
+  if (recv_replicadaemon_state.daemon_status == STATE_BOOTING) {
+    recv_replicadaemon_state.daemon_status = STATE_ACTIVE;
+    peer_updated = true;
+  } else if (recv_replicadaemon_state.daemon_status == STATE_STOPPING) {
+    recv_replicadaemon_state.daemon_status = STATE_DOWN;
+    peer_updated = true;
+  }
+
+  if (peer_updated == false) {
+    return false;
+  }
+  auto temp_replicadaemon_map = cur_cache_replicadaemon_map;
+  auto& replicadaemons_state = temp_replicadaemon_map.get_replicadaemons_stateref();
+  bool replicadaemon_state_exist = false;
+  for (auto& replicadaemon_state : replicadaemons_state) {
+    if (replicadaemon_state.replica_route_addr.legacy_equals(
+          recv_replicadaemon_state.replica_route_addr)) {
+          replicadaemon_state_exist = true;
+          replicadaemon_state.daemon_status = recv_replicadaemon_state.daemon_status;
+          break;
+    }
+  }
+  if (!replicadaemon_state_exist) {
+    replicadaemons_state.push_back(blink_msg->get_replicadaemon_stateref());
+  }
+
+  pending_cache_replicadaemon_map = std::move(temp_replicadaemon_map);
+
+  return true;
+}
+
 bool ReplicaMonitor::preprocess_blink(MonOpRequestRef mon_op_req)
 {
   auto session = mon_op_req->get_session();
